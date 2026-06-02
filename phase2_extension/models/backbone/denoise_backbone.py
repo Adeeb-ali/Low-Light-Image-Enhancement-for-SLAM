@@ -1,66 +1,62 @@
-import torch
 import torch.nn as nn
 
-from ..blocks.rrdb_block import RRDBBlock
-from ..blocks.feature_fusion import FeatureFusion
-from ..attention.channel_attention import ChannelAttention
+from phase2_extension.models.blocks.rrdb_block import RRDB
+
+from phase2_extension.models.modules.multi_scale_fusion import MultiScaleFusion
 
 
 class DenoiseBackbone(nn.Module):
 
     def __init__(
+
         self,
         channels=64,
-        num_rrdb_blocks=4
+        num_rrdb_blocks=6
+
     ):
 
         super().__init__()
 
-        self.initial_conv = nn.Conv2d(
-            in_channels=3,
-            out_channels=channels,
+        self.initial = nn.Conv2d(
+            3,
+            channels,
             kernel_size=3,
-            stride=1,
-            padding=1,
-            bias=True
+            padding=1
         )
 
         self.rrdb_blocks = nn.Sequential(
 
             *[
-                RRDBBlock(
-                    channels=channels,
-                    num_blocks=3
-                )
-
+                RRDB(channels)
                 for _ in range(num_rrdb_blocks)
             ]
 
         )
 
-        self.channel_attention = ChannelAttention(
-            channels=channels,
-            reduction=16
+        self.multi_scale = MultiScaleFusion(
+            channels
         )
 
-        self.feature_fusion = FeatureFusion(
-            channels=channels
+        self.final = nn.Conv2d(
+            channels,
+            channels,
+            kernel_size=3,
+            padding=1
         )
 
-    def forward(self, x):
+    def forward(
 
-        shallow_features = self.initial_conv(x)
+        self,
+        x
 
-        deep_features = self.rrdb_blocks(
-            shallow_features
-        )
+    ):
 
-        attention_features = self.channel_attention(
-            deep_features
-        )
+        feat = self.initial(x)
 
-        fused_features = self.feature_fusion(
-            attention_features
-        )
+        out = self.rrdb_blocks(feat)
 
-        return fused_features
+        out = self.multi_scale(out)
+
+        out = self.final(out)
+
+        return feat + out

@@ -1,0 +1,43 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual env
+venv/
+.env
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Data / outputs
+
+tmp/
+cache/
+
+# Images / media
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.mp4
+*.avi
+*.mov
+
+# JSON / TXT (optional)
+*.json
+*.txt
+
+# Specific files
+imp.txt
+best_architecture.json
+
+# Folders
+deployment/

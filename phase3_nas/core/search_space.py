@@ -1,28 +1,38 @@
-SEARCH_SPACE = {
-
-    "channels": [
-        48,
-        64,
-        80,
-        
-    ],
-
-    "num_rrdb_blocks": [
-        4,
-        6,
-        8,
-        
-    ]
-
-}
 # SEARCH_SPACE = {
 
 #     "channels": [
-#         16
+
+#         40,
+#         48,
+#         56,
+#         64
+
 #     ],
 
 #     "num_rrdb_blocks": [
-#         1
+
+#         3,
+#         4,
+#         5
+
 #     ]
 
 # }
+
+SEARCH_SPACE = {
+
+    "channels": [
+
+        16,
+        24
+
+    ],
+
+    "num_rrdb_blocks": [
+
+        1,
+        2
+
+    ]
+
+}

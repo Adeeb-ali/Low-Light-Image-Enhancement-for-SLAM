@@ -1,15 +1,18 @@
-import torch
 import torch.nn as nn
 
-from .backbone.denoise_backbone import DenoiseBackbone
+from phase2_extension.models.backbone.denoise_backbone import DenoiseBackbone
+
+from phase2_extension.models.modules.illumination_enhancer import IlluminationEnhancer
 
 
 class EnhancementNet(nn.Module):
 
     def __init__(
+
         self,
         channels=64,
-        num_rrdb_blocks=4
+        num_rrdb_blocks=6
+
     ):
 
         super().__init__()
@@ -19,29 +22,44 @@ class EnhancementNet(nn.Module):
             num_rrdb_blocks=num_rrdb_blocks
         )
 
-        self.reconstruction = nn.Conv2d(
-            in_channels=channels,
-            out_channels=3,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            bias=True
+        self.illumination = IlluminationEnhancer(
+            channels
         )
 
-    def forward(self, x):
+        self.reconstruction = nn.Sequential(
 
-        features = self.backbone(x)
+            nn.Conv2d(
+                channels,
+                channels,
+                kernel_size=3,
+                padding=1
+            ),
 
-        predicted_noise = self.reconstruction(
-            features
+            nn.LeakyReLU(
+                0.2,
+                inplace=True
+            ),
+
+            nn.Conv2d(
+                channels,
+                3,
+                kernel_size=3,
+                padding=1
+            )
+
         )
 
-        clean_image = x - predicted_noise
+    def forward(
 
-        clean_image = torch.clamp(
-            clean_image,
-            0.0,
-            1.0
-        )
+        self,
+        x
 
-        return clean_image
+    ):
+
+        feat = self.backbone(x)
+
+        feat = self.illumination(feat)
+
+        out = self.reconstruction(feat)
+
+        return out

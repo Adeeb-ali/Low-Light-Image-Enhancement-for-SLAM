@@ -1,14 +1,411 @@
+# # phase3_nas/core/retrain.py
+
+# import os
+
+# import torch
+
+# import torch.optim as optim
+
+# from torch.optim.lr_scheduler import CosineAnnealingLR
+
+# from torch.utils.data import DataLoader
+
+# from phase2_extension.data.multi_dataset import MultiDataset
+
+# from phase2_extension.models.enhancement_net import EnhancementNet
+
+# from phase2_extension.losses.total_loss import (
+
+#     ImprovedTotalLoss,
+#     LossConfigs
+
+# )
+
+# from phase2_extension.trainer.trainer import Trainer
+
+
+# class Retrainer:
+
+#     def __init__(
+
+#         self,
+#         device
+
+#     ):
+
+#         self.device = device
+
+#     def retrain(
+
+#         self,
+#         architecture,
+#         epochs=200,
+#         learning_rate=1e-4
+
+#     ):
+
+#         checkpoint_dir = "outputs/checkpoints"
+
+#         os.makedirs(
+
+#             checkpoint_dir,
+
+#             exist_ok=True
+
+#         )
+
+#         checkpoint_path = os.path.join(
+
+#             checkpoint_dir,
+
+#             "best_model.pth"
+
+#         )
+
+#         dataset = MultiDataset(
+
+#             sidd_root="datasets/Data",
+
+#             lol_root="datasets/lol_dataset",
+
+#             patch_size=256,
+
+#             training=True
+
+#         )
+
+#         train_loader = DataLoader(
+
+#             dataset,
+
+#             batch_size=4,
+
+#             shuffle=True,
+
+#             num_workers=0,
+
+#             pin_memory=False
+
+#         )
+
+#         print("\n====================================")
+#         print(f"Total Training Samples : {len(dataset)}")
+#         print("====================================\n")
+
+#         model = EnhancementNet(
+
+#             channels=architecture["channels"],
+
+#             num_rrdb_blocks=architecture[
+#                 "num_rrdb_blocks"
+#             ]
+
+#         ).to(
+
+#             self.device
+
+#         )
+
+#         total_params = sum(
+
+#             p.numel()
+
+#             for p in model.parameters()
+
+#         )
+
+#         trainable_params = sum(
+
+#             p.numel()
+
+#             for p in model.parameters()
+
+#             if p.requires_grad
+
+#         )
+
+#         print("\n====================================")
+#         print("FINAL ARCHITECTURE")
+#         print("====================================\n")
+
+#         print(
+
+#             f"Channels          : {architecture['channels']}"
+
+#         )
+
+#         print(
+
+#             f"RRDB Blocks       : {architecture['num_rrdb_blocks']}"
+
+#         )
+
+#         print(
+
+#             f"Total Parameters  : {total_params:,}"
+
+#         )
+
+#         print(
+
+#             f"Trainable Params  : {trainable_params:,}"
+
+#         )
+
+#         print("\n====================================\n")
+
+#         optimizer = optim.AdamW(
+
+#             model.parameters(),
+
+#             lr=learning_rate,
+
+#             weight_decay=1e-4
+
+#         )
+
+#         scheduler = CosineAnnealingLR(
+
+#             optimizer,
+
+#             T_max=epochs,
+
+#             eta_min=1e-6
+
+#         )
+
+#         loss_function = ImprovedTotalLoss(
+
+#             use_perceptual=True,
+
+#             loss_weights=LossConfigs.LOW_LIGHT_FOCUSED
+
+#         )
+
+#         trainer = Trainer(
+
+#             model=model,
+
+#             train_loader=train_loader,
+
+#             optimizer=optimizer,
+
+#             scheduler=scheduler,
+
+#             loss_function=loss_function,
+
+#             device=self.device
+
+#         )
+
+#         best_loss = float("inf")
+
+#         start_epoch = 0
+
+#         if os.path.exists(checkpoint_path):
+
+#             print("\n====================================")
+#             print("RESUMING BEST MODEL TRAINING")
+#             print("====================================\n")
+
+#             checkpoint = torch.load(
+
+#                 checkpoint_path,
+
+#                 map_location=self.device
+
+#             )
+
+#             model.load_state_dict(
+
+#                 checkpoint["model_state_dict"]
+
+#             )
+
+#             optimizer.load_state_dict(
+
+#                 checkpoint["optimizer_state_dict"]
+
+#             )
+
+#             scheduler.load_state_dict(
+
+#                 checkpoint["scheduler_state_dict"]
+
+#             )
+
+#             start_epoch = checkpoint["epoch"] + 1
+
+#             best_loss = checkpoint["loss"]
+
+#             print("\n====================================")
+#             print("CHECKPOINT LOADED")
+#             print("====================================\n")
+
+#             print(
+
+#                 f"Epoch             : {start_epoch}"
+
+#             )
+
+#             print(
+
+#                 f"Loss              : {best_loss:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Channels          : {checkpoint['channels']}"
+
+#             )
+
+#             print(
+
+#                 f"RRDB Blocks       : {checkpoint['num_rrdb_blocks']}"
+
+#             )
+
+#             print("\n====================================\n")
+
+#         else:
+
+#             print("\n====================================")
+#             print("STARTING FRESH RETRAINING")
+#             print("====================================\n")
+
+#         for epoch in range(start_epoch, epochs):
+
+#             print(
+
+#                 f"\nEpoch [{epoch + 1}/{epochs}]\n"
+
+#             )
+
+#             losses = trainer.train_one_epoch()
+
+#             average_loss = losses["total_loss"]
+
+#             print(
+
+#                 f"\nAverage Loss : {average_loss:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Charbonnier  : {losses['charbonnier_loss']:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"SSIM Loss    : {losses['ssim_loss']:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Edge Loss    : {losses['edge_loss']:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Perceptual   : {losses['perceptual_loss']:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Frequency    : {losses['frequency_loss']:.6f}"
+
+#             )
+
+#             print(
+
+#                 f"Brightness   : {losses['brightness_loss']:.6f}"
+
+#             )
+
+#             if average_loss < best_loss:
+
+#                 best_loss = average_loss
+
+#                 torch.save(
+
+#                     {
+
+#                         "epoch": epoch,
+
+#                         "model_state_dict": model.state_dict(),
+
+#                         "optimizer_state_dict": optimizer.state_dict(),
+
+#                         "scheduler_state_dict": scheduler.state_dict(),
+
+#                         "loss": best_loss,
+
+#                         "channels": architecture["channels"],
+
+#                         "num_rrdb_blocks": architecture[
+#                             "num_rrdb_blocks"
+#                         ]
+
+#                     },
+
+#                     checkpoint_path
+
+#                 )
+
+#                 print(
+
+#                     f"\nCheckpoint Saved : {checkpoint_path}"
+
+#                 )
+
+#                 print(
+
+#                     f"\nNEW BEST MODEL SAVED (Loss: {best_loss:.6f})"
+
+#                 )
+
+#             else:
+
+#                 print(
+
+#                     "\nModel Not Improved"
+
+#                 )
+
+#             scheduler.step()
+
+#         return model
+
+# phase3_nas/core/retrain.py
+
 import os
 
 import torch
 
+import torch.optim as optim
+
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 from torch.utils.data import DataLoader
 
-from phase2_extension.data.sidd_dataset import SIDDDataset
+from phase2_extension.data.multi_dataset import MultiDataset
+
 from phase2_extension.models.enhancement_net import EnhancementNet
-from phase2_extension.losses.total_loss import TotalLoss
+
+from phase2_extension.losses.total_loss import (
+
+    ImprovedTotalLoss,
+    LossConfigs
+
+)
+
 from phase2_extension.trainer.trainer import Trainer
-from phase2_extension.trainer.checkpoint import CheckpointManager
 
 
 class Retrainer:
@@ -26,66 +423,10 @@ class Retrainer:
 
         self,
         architecture,
-        epochs=200,
-        resume=True
+        epochs=2,
+        learning_rate=1e-4
 
     ):
-
-        dataset = SIDDDataset(
-
-            root_dir="datasets/Data",
-
-            patch_size=256,
-
-            training=True
-
-        )
-
-        dataloader = DataLoader(
-
-            dataset,
-
-            batch_size=2,
-
-            shuffle=True,
-
-            num_workers=0
-
-        )
-
-        model = EnhancementNet(
-
-            channels=architecture["channels"],
-
-            num_rrdb_blocks=architecture[
-                "num_rrdb_blocks"
-            ]
-
-        ).to(self.device)
-
-        loss_function = TotalLoss()
-
-        optimizer = torch.optim.Adam(
-
-            model.parameters(),
-
-            lr=1e-5
-
-        )
-
-        trainer = Trainer(
-
-            model=model,
-
-            dataloader=dataloader,
-
-            loss_function=loss_function,
-
-            optimizer=optimizer,
-
-            device=self.device
-
-        )
 
         checkpoint_dir = "outputs/checkpoints"
 
@@ -97,64 +438,57 @@ class Retrainer:
 
         )
 
-        checkpoint_manager = CheckpointManager(
-
-            save_dir=checkpoint_dir
-
-        )
-
-        latest_checkpoint = os.path.join(
+        checkpoint_path = os.path.join(
 
             checkpoint_dir,
 
-            "latest_model.pth"
+            "best_model.pth"
 
         )
 
-        start_epoch = 0
+        dataset = MultiDataset(
 
-        if resume and os.path.exists(
+            sidd_root="datasets/Data",
 
-            latest_checkpoint
+            lol_root="datasets/lol_dataset",
 
-        ):
+            patch_size=256,
 
-            print(
+            training=True
 
-                "\n===================================="
-            )
+        )
 
-            print(
+        train_loader = DataLoader(
 
-                "RESUMING TRAINING"
-            )
+            dataset,
 
-            print(
+            batch_size=4,
 
-                "====================================\n"
-            )
+            shuffle=True,
 
-            model, optimizer, start_epoch, _ = (
+            num_workers=0,
 
-                checkpoint_manager.load_checkpoint(
+            pin_memory=False
 
-                    model=model,
+        )
 
-                    optimizer=optimizer,
+        print("\n====================================")
+        print(f"Total Training Samples : {len(dataset)}")
+        print("====================================\n")
 
-                    checkpoint_path=latest_checkpoint
+        model = EnhancementNet(
 
-                )
+            channels=architecture["channels"],
 
-            )
+            num_rrdb_blocks=architecture[
+                "num_rrdb_blocks"
+            ]
 
-            start_epoch += 1
+        ).to(
 
-            print(
+            self.device
 
-                f"Starting From Epoch : {start_epoch}\n"
-
-            )
+        )
 
         total_params = sum(
 
@@ -174,20 +508,9 @@ class Retrainer:
 
         )
 
-        print(
-
-            "\n===================================="
-        )
-
-        print(
-
-            "FINAL ARCHITECTURE"
-        )
-
-        print(
-
-            "====================================\n"
-        )
+        print("\n====================================")
+        print("FINAL ARCHITECTURE")
+        print("====================================\n")
 
         print(
 
@@ -213,18 +536,129 @@ class Retrainer:
 
         )
 
-        print(
+        print("\n====================================\n")
 
-            "\n====================================\n"
+        optimizer = optim.AdamW(
+
+            model.parameters(),
+
+            lr=learning_rate,
+
+            weight_decay=1e-4
+
         )
 
-        for epoch in range(
+        scheduler = CosineAnnealingLR(
 
-            start_epoch,
+            optimizer,
 
-            epochs
+            T_max=epochs,
 
-        ):
+            eta_min=1e-6
+
+        )
+
+        loss_function = ImprovedTotalLoss(
+
+            use_perceptual=True,
+
+            loss_weights=LossConfigs.LOW_LIGHT_FOCUSED
+
+        )
+
+        trainer = Trainer(
+
+            model=model,
+
+            train_loader=train_loader,
+
+            optimizer=optimizer,
+
+            scheduler=scheduler,
+
+            loss_function=loss_function,
+
+            device=self.device
+
+        )
+
+        best_loss = float("inf")
+
+        start_epoch = 0
+
+        if os.path.exists(checkpoint_path):
+
+            print("\n====================================")
+            print("RESUMING BEST MODEL TRAINING")
+            print("====================================\n")
+
+            checkpoint = torch.load(
+
+                checkpoint_path,
+
+                map_location=self.device
+
+            )
+
+            model.load_state_dict(
+
+                checkpoint["model_state_dict"]
+
+            )
+
+            optimizer.load_state_dict(
+
+                checkpoint["optimizer_state_dict"]
+
+            )
+
+            scheduler.load_state_dict(
+
+                checkpoint["scheduler_state_dict"]
+
+            )
+
+            start_epoch = checkpoint["epoch"] + 1
+
+            best_loss = checkpoint["loss"]
+
+            print("\n====================================")
+            print("CHECKPOINT LOADED")
+            print("====================================\n")
+
+            print(
+
+                f"Epoch             : {start_epoch}"
+
+            )
+
+            print(
+
+                f"Loss              : {best_loss:.6f}"
+
+            )
+
+            print(
+
+                f"Channels          : {checkpoint['channels']}"
+
+            )
+
+            print(
+
+                f"RRDB Blocks       : {checkpoint['num_rrdb_blocks']}"
+
+            )
+
+            print("\n====================================\n")
+
+        else:
+
+            print("\n====================================")
+            print("STARTING FRESH RETRAINING")
+            print("====================================\n")
+
+        for epoch in range(start_epoch, epochs):
 
             print(
 
@@ -232,53 +666,102 @@ class Retrainer:
 
             )
 
-            loss = trainer.train_one_epoch()
+            losses = trainer.train_one_epoch()
 
-            checkpoint_manager.save_checkpoint(
+            average_loss = losses["total_loss"]
 
-                model=model,
+            print(
 
-                optimizer=optimizer,
-
-                epoch=epoch,
-
-                loss=loss,
-
-                channels=architecture["channels"],
-
-                num_rrdb_blocks=architecture[
-                    "num_rrdb_blocks"
-                ],
-
-                filename="latest_model.pth"
+                f"\nAverage Loss : {average_loss:.6f}"
 
             )
 
             print(
 
-                f"\nAverage Loss : {loss:.6f}"
+                f"Charbonnier  : {losses['charbonnier_loss']:.6f}"
 
             )
 
             print(
 
-                "Checkpoint Saved\n"
+                f"SSIM Loss    : {losses['ssim_loss']:.6f}"
 
             )
 
-        print(
+            print(
 
-            "\n===================================="
-        )
+                f"Edge Loss    : {losses['edge_loss']:.6f}"
 
-        print(
+            )
 
-            "RETRAINING COMPLETED"
-        )
+            print(
 
-        print(
+                f"Perceptual   : {losses['perceptual_loss']:.6f}"
 
-            "====================================\n"
-        )
+            )
+
+            print(
+
+                f"Frequency    : {losses['frequency_loss']:.6f}"
+
+            )
+
+            print(
+
+                f"Brightness   : {losses['brightness_loss']:.6f}"
+
+            )
+
+            if average_loss < best_loss:
+
+                best_loss = average_loss
+
+                torch.save(
+
+                    {
+
+                        "epoch": epoch,
+
+                        "model_state_dict": model.state_dict(),
+
+                        "optimizer_state_dict": optimizer.state_dict(),
+
+                        "scheduler_state_dict": scheduler.state_dict(),
+
+                        "loss": best_loss,
+
+                        "channels": architecture["channels"],
+
+                        "num_rrdb_blocks": architecture[
+                            "num_rrdb_blocks"
+                        ]
+
+                    },
+
+                    checkpoint_path
+
+                )
+
+                print(
+
+                    f"\nCheckpoint Saved : {checkpoint_path}"
+
+                )
+
+                print(
+
+                    f"\nNEW BEST MODEL SAVED (Loss: {best_loss:.6f})"
+
+                )
+
+            else:
+
+                print(
+
+                    "\nModel Not Improved"
+
+                )
+
+            scheduler.step()
 
         return model
