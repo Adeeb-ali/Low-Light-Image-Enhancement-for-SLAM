@@ -184,6 +184,4 @@ The model is considered **FPGA-deployment ready** from a structural and mathemat
 
 This project is provided exclusively for research and educational purposes.
 
-```
 
-```
