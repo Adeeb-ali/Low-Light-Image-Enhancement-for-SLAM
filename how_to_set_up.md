@@ -1,10 +1,3 @@
-Here is the updated **SETUP.md** that seamlessly integrates the Phase 3 Neural Architecture Search (NAS) and retraining steps while maintaining your original structure and philosophy.
-
-I have also updated the **Experimental Environment** section to include the standard NAS and retraining libraries (like `thop` for profiling) that typically accompany these types of pipelines.
-
----
-
-```markdown
 # EnhancementNet Setup Guide
 
 This document explains how to set up and run the EnhancementNet training, evaluation, and Neural Architecture Search (NAS) pipeline used in this project.
@@ -173,7 +166,3 @@ Run the corresponding evaluation script directly from the project root directory
 ## Additional Resources
 
 Results, evaluation outputs, videos, and additional materials are available through the links provided in the project **README.md**.
-
-```
-
-```
