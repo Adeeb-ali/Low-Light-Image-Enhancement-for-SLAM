@@ -1,8 +1,3 @@
-Here is the clean, professionally structured **README.md**. I have streamlined the sections, integrated the Phase 3 Neural Architecture Search (NAS) details to match your project's current trajectory, and carefully reworded the signal enhancement section to keep it **technically defensible** by treating the dB gains as observed enhancement performance rather than rigid PSNR/SSIM benchmarks.
-
----
-
-```markdown
 # EnhancementNet: Low-Light Image Enhancement for Robotics, SLAM, and Embedded Vision
 
 EnhancementNet is a deep learning-based low-light image enhancement and denoising framework developed for robotics, autonomous navigation, drone vision, visual SLAM, and embedded AI applications.
