@@ -1,5 +1,3 @@
-# phase2_extension/trainer/trainer.py
-
 import torch
 
 from tqdm import tqdm

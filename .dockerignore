@@ -1,7 +1,0 @@
-phase2_multidegradation/train_images
-phase3_nas/storage
-venv311
-__pycache__
-*.pth
-*.onnx
-compiled_model

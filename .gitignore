@@ -41,3 +41,6 @@ best_architecture.json
 
 # Folders
 depolyment/
+
+!_ReadMetxt
+!Scene_Instances.txt
