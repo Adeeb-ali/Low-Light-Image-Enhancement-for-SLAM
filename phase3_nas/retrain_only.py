@@ -15,7 +15,6 @@ def main():
         print(f"CUDA Devices : {torch.cuda.device_count()}")
     print("====================================\n")
 
-    # --- FIX: Replace hardcoded dictionary with dynamic loading ---
     config_path = "best_architecture.json"
     
     if not os.path.exists(config_path):
